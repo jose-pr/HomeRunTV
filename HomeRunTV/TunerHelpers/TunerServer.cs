@@ -24,6 +24,7 @@ namespace HomeRunTV.TunerHelpers
         public string hostname { get; set; }
         public string port { get; set; }
         public List<LiveTvTunerInfo> tuners;
+        public bool onlyLoadFavorites { get; set; }
         private void initialSetup()
         {
             model = "";
@@ -145,7 +146,7 @@ namespace HomeRunTV.TunerHelpers
             System.IO.Stream stream = await _httpClient.Get(httpOptions).ConfigureAwait(false);
             var root = json.DeserializeFromStream<List<Rootobject>>(stream);
             _logger.Info("[HomeRunTV] Found "+ root.Count() + "channels on host: " + hostname);
-            root.RemoveAll(x => x.Favorite == false);
+            if(onlyLoadFavorites){root.RemoveAll(x => x.Favorite == false);}
             if (root != null)
             {
                 ChannelList = root.Select(i => new ChannelInfo
@@ -174,7 +175,7 @@ namespace HomeRunTV.TunerHelpers
                        
                         if ( (wikiInfo.Section[counter].Image != null) && (isTvReleated(wikiInfo.Section[counter].Description.Value)))
                         {
-                            Channel.ImageUrl = wikiInfo.Section[counter].Image.source;
+                            Channel.ImageUrl = wikiInfo.Section[counter].Image.source.Replace("50px","256px");
                             Channel.HasImage = true;
                             _logger.Info("[HomeRunTV] Found IMAGE for "+Channel.Name+" from: "+Channel.ImageUrl);
                             break;

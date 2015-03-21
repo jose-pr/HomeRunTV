@@ -47,6 +47,7 @@ namespace HomeRunTV
             _plugin = Plugin.Instance;
             Name = "Not Connected";
             tunerServer = new TunerServer(_plugin.Configuration.apiURL);
+            tunerServer.onlyLoadFavorites = _plugin.Configuration.loadOnlyFavorites;
             _xmlSerializer = xmlSerializer;            
         }
 

@@ -7,12 +7,13 @@ namespace HomeRunTV.Configuration
     {
         public string apiURL { get; set; }
         public string Port { get; set; }
-        //public Boolean EnableDebugLogging { get; set; }
+        public bool loadOnlyFavorites { get; set; }
 
         public PluginConfiguration()
         {
             Port = "5004";
             apiURL = "localhost";
+            loadOnlyFavorites = true;
         }
     }
 }

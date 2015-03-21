@@ -21,9 +21,14 @@
                             </div>
                         </li>
                         <li>
+                            <label for="chkLoadFavorites">Only load Channels marked as favorite</label>
+                            <input type="checkbox" id="chkLoadFavorites" data-mini="true" />
+                        </li>
+                        <li>
                             <button type="submit" data-theme="b">Save</button>
                             <button type="button" onclick="history.back();">Cancel</button>
                         </li>
+
                     </ul>
 
                 </form>
@@ -40,6 +45,7 @@
                 var page = this;
                 ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
                     $('#txtWebServiceUrl', page).val(config.apiURL || "");
+                    $('#chkLoadFavorites', page).checked(config.loadOnlyFavorites).checkboxradio("refresh");
                     Dashboard.hideLoadingMsg();
                 });
             });
@@ -49,6 +55,7 @@
                 var form = this;
                 ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
                     config.apiURL = $('#txtWebServiceUrl', form).val();
+                    config.loadOnlyFavorites = $('#chkLoadFavorites', form).checked();
                     ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
                 });
                 // Disable default form submission
