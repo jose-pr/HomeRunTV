@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>HomeRunTV</title>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage HomeRunTVConfigurationPage">
+
+        <div data-role="content">
+            <div class="content-primary">
+                <form class="HomeRunTVConfigurationForm">
+
+                    <ul class="ulForm" data-role="listview">
+                        <li>
+                            <label for="txtWebServiceUrl">
+                                HomeRun hostname or IP address:
+                            </label>
+                            <input type="text" id="txtWebServiceUrl" name="txtWebServiceUrl" />
+                            <div class="fieldDescription">
+                                Tunner url (format --> {hostname}).
+                            </div>
+                        </li>
+                        <li>
+                            <button type="submit" data-theme="b">Save</button>
+                            <button type="button" onclick="history.back();">Cancel</button>
+                        </li>
+                    </ul>
+
+                </form>
+            </div>
+        </div>
+
+
+        <script type="text/javascript">
+
+            var HomeRunTVConfigurationPage = { pluginUniqueId: "b0067c00-62cf-476c-9e63-d53ae7247aa9" };
+
+            $('.HomeRunTVConfigurationPage').on('pageshow', function (event) {
+                Dashboard.showLoadingMsg();
+                var page = this;
+                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
+                    $('#txtWebServiceUrl', page).val(config.apiURL || "");
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            $('.HomeRunTVConfigurationForm').on('submit', function (e) {
+                Dashboard.showLoadingMsg();
+                var form = this;
+                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
+                    config.apiURL = $('#txtWebServiceUrl', form).val();
+                    ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
+                });
+                // Disable default form submission
+                return false;
+            });
+
+        </script>
+
+
+    </div>
+</body>
+</html>

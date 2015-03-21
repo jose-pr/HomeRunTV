@@ -1,0 +1,8 @@
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\bin\Release\HomeRunTV.dll
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\bin\Release\HomeRunTV.pdb
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\bin\Release\MediaBrowser.Common.dll
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\bin\Release\MediaBrowser.Controller.dll
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\bin\Release\MediaBrowser.Model.dll
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\obj\Release\HomeRunTV.csprojResolveAssemblyReference.cache
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\obj\Release\HomeRunTV.dll
+c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTV\obj\Release\HomeRunTV.pdb
