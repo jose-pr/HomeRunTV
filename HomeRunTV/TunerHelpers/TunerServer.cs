@@ -23,14 +23,16 @@ namespace HomeRunTV.TunerHelpers
         public string firmware { get; set; }
         public string hostname { get; set; }
         public string port { get; set; }
-
+        public List<LiveTvTunerInfo> tuners;
         private void initialSetup()
         {
             model = "";
             deviceID = "";
             firmware = "";
             port = "5004";
+            tuners = new List<LiveTvTunerInfo>();
         }
+
         public TunerServer()
         {
             initialSetup();
@@ -48,7 +50,7 @@ namespace HomeRunTV.TunerHelpers
         {
             return getWebUrl() + ":" + port;
         }
-        public async Task GetTunerInfo(ILogger _logger, IHttpClient _httpClient, HttpRequestOptions httpOptions)
+        public async Task GetDeviceInfo(ILogger _logger, IHttpClient _httpClient, HttpRequestOptions httpOptions)
         {           
             httpOptions.Url = string.Format("{0}/", getWebUrl());
             System.IO.Stream stream = await _httpClient.Get(httpOptions).ConfigureAwait(false);
@@ -68,7 +70,74 @@ namespace HomeRunTV.TunerHelpers
                 }
             }
         }
+        public async Task<List<LiveTvTunerInfo>> GetTunersInfo(ILogger _logger, IHttpClient _httpClient, HttpRequestOptions httpOptions)
+        {
+            httpOptions.Url = string.Format("{0}/tuners.html", getWebUrl());
+            System.IO.Stream stream = await _httpClient.Get(httpOptions).ConfigureAwait(false);
+            if (tuners.Count() == 0 ) {CreateTuners(stream,_logger);}
+            else { updateTuners(stream, _logger); }
+            return tuners;
+        }
+        private void CreateTuners(Stream tunersXML, ILogger _logger){
+            using (var sr = new StreamReader(tunersXML, System.Text.Encoding.UTF8))
+            
+            {
+                while (!sr.EndOfStream)
+                {
+                    string line = Xml.StripXML(sr.ReadLine());
+                    if (line.StartsWith("Tuner 0 Channel")) {
+                        tuners.Add(new LiveTvTunerInfo() { Name = "Tunner 0", ProgramName = line.Replace("Tuner 0 Channel", ""),SourceType=model });
+                        _logger.Error("[HomeRunTV] Added Tuner 0 to " + hostname);
+                    }
+                    if (line.StartsWith("Tuner 1 Channel"))
+                    {
+                        tuners.Add(new LiveTvTunerInfo() { Name = "Tunner 1", ProgramName = line.Replace("Tuner 1 Channel", ""), SourceType = model });
+                        _logger.Error("[HomeRunTV] Added Tuner 1 to " + hostname);
+                    }
+                  
+                    if (line.StartsWith("Tuner 2 Channel"))
+                    {
+                        tuners.Add(new LiveTvTunerInfo() { Name = "Tunner 2", ProgramName = line.Replace("Tuner 2 Channel", ""), SourceType = model });
+                        _logger.Error("[HomeRunTV] Added Tuner 2 to " + hostname);
+                    }
+                   
+                }
+                if (String.IsNullOrWhiteSpace(model))
+                {
+                    _logger.Error("[HomeRunTV] Failed to load tuner info");
+                    throw new ApplicationException("Failed to load tuner info.");
+                }
+            }
+        }
+        private void updateTuners(Stream tunersXML, ILogger _logger)
+        {
+            using (var sr = new StreamReader(tunersXML, System.Text.Encoding.UTF8))
+            {
+                while (!sr.EndOfStream)
+                {
+                    string line = Xml.StripXML(sr.ReadLine());
+                    if (line.StartsWith("Tuner 0 Channel"))
+                    {
+                        tuners[0].ProgramName = line.Replace("Tuner 0 Channel", "");
+                    }
+                    if (line.StartsWith("Tuner 1 Channel"))
+                    {
+                        tuners[1].ProgramName = line.Replace("Tuner 1 Channel", "");
+                    }
 
+                    if (line.StartsWith("Tuner 2 Channel"))
+                    {
+                        tuners[2].ProgramName = line.Replace("Tuner 2 Channel", "");
+                    }
+
+                }
+                if (String.IsNullOrWhiteSpace(model))
+                {
+                    _logger.Error("[HomeRunTV] Failed to Update tuner info");
+                    throw new ApplicationException("Failed to Update tuner info.");
+                }
+            }
+        }
         public async Task<IEnumerable<ChannelInfo>> GetChannels(ILogger _logger, IHttpClient _httpClient, HttpRequestOptions httpOptions, IJsonSerializer json, IXmlSerializer xml)
         {
             List<ChannelInfo> ChannelList;

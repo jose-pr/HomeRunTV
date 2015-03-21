@@ -63,7 +63,7 @@ namespace HomeRunTV
                 _logger.Error("[HomeRunTV] Tunner hostname/ip missing.");
                 throw new InvalidOperationException("HomeRunTV Tunner hostname/ip missing.");
             } 
-            await tunerServer.GetTunerInfo(_logger, _httpClient,_httpOptions);
+            await tunerServer.GetDeviceInfo(_logger, _httpClient,_httpOptions);
             if (tunerServer.model == "")
             {
                 _logger.Error("[HomeRunTV] No tuner found at address .");
@@ -186,7 +186,8 @@ namespace HomeRunTV
             upgradeAvailable = false;
             serverVersion = tunerServer.firmware;
             //Tuner information
-            List<LiveTvTunerInfo> tvTunerInfos =null;
+            var _httpOptions = new HttpRequestOptions { CancellationToken = cancellationToken };
+            List<LiveTvTunerInfo> tvTunerInfos = await tunerServer.GetTunersInfo(_logger, _httpClient, _httpOptions);
             return new LiveTvServiceStatusInfo
             {
                 HasUpdateAvailable = upgradeAvailable,

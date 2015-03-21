@@ -63,7 +63,6 @@
     </Compile>
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TunerHelpers\Tuner.cs" />
     <Compile Include="TunerHelpers\TunerServer.cs" />
     <Compile Include="TunerHelpers\webResponseParser.cs" />
   </ItemGroup>
