@@ -8,7 +8,6 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Net;
 using MediaBrowser.Common.Net;
-using HomeRunTV.Interfaces;
 using HomeRunTV.General_Helper;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.Channels;
@@ -129,32 +128,36 @@ namespace HomeRunTV.TunerHelpers
                     ImageUrl = null,
                     HasImage = false
                 }).ToList();
+                if (false)
+                {
 
-               foreach (ChannelInfo Channel in ChannelList){
-                   
-                    string wikiApi = "http://en.wikipedia.org/w/api.php?action=opensearch&format=xml&namespace=0&redirects=return&search=";
-                    string curatedName =cleanChannelName(Channel.Name);
-                    _logger.Info("[HomeRunTV] Finding image for: " + curatedName);
-                    httpOptions.Url = string.Format("{0}{1}", wikiApi,curatedName);           
-                    stream = await _httpClient.Get(httpOptions).ConfigureAwait(false);
-                    SearchSuggestion wikiInfo = new SearchSuggestion();
-                    wikiInfo = (SearchSuggestion) xml.DeserializeFromStream(wikiInfo.GetType(), stream);
-                    _logger.Info("[HomeRunTV] Channel Matches: " + wikiInfo.Section.Count());
-                   int count = wikiInfo.Section.Count();
-                   int counter = 0;
-                    while (counter < count)
+                    foreach (ChannelInfo Channel in ChannelList)
                     {
-                       
-                        if ( (wikiInfo.Section[counter].Image != null) && (isTvReleated(wikiInfo.Section[counter].Description.Value)))
+
+                        string wikiApi = "http://en.wikipedia.org/w/api.php?action=opensearch&format=xml&namespace=0&redirects=return&search=";
+                        string curatedName = cleanChannelName(Channel.Name);
+                        _logger.Info("[HomeRunTV] Finding image for: " + curatedName);
+                        httpOptions.Url = string.Format("{0}{1}", wikiApi, curatedName);
+                        stream = await _httpClient.Get(httpOptions).ConfigureAwait(false);
+                        SearchSuggestion wikiInfo = new SearchSuggestion();
+                        wikiInfo = (SearchSuggestion)xml.DeserializeFromStream(wikiInfo.GetType(), stream);
+                        _logger.Info("[HomeRunTV] Channel Matches: " + wikiInfo.Section.Count());
+                        int count = wikiInfo.Section.Count();
+                        int counter = 0;
+                        while (counter < count)
                         {
-                            Channel.ImageUrl = wikiInfo.Section[counter].Image.source.Replace("50px","256px");
-                            Channel.HasImage = true;
-                            _logger.Info("[HomeRunTV] Found IMAGE for "+Channel.Name+" from: "+Channel.ImageUrl);
-                            break;
+
+                            if ((wikiInfo.Section[counter].Image != null) && (isTvReleated(wikiInfo.Section[counter].Description.Value)))
+                            {
+                                Channel.ImageUrl = wikiInfo.Section[counter].Image.source.Replace("50px", "256px");
+                                Channel.HasImage = true;
+                                _logger.Info("[HomeRunTV] Found IMAGE for " + Channel.Name + " from: " + Channel.ImageUrl);
+                                break;
+                            }
+                            counter++;
                         }
-                        counter++;
                     }
-               }
+                }
             }else{
                 ChannelList = new  List<ChannelInfo>();
             }
@@ -184,7 +187,6 @@ namespace HomeRunTV.TunerHelpers
         {
             return getApiUrl()+"/auto/v"+ChannelNumber;
         }
-        
         public class Rootobject
         {
             public string GuideNumber { get; set; }

@@ -1,8 +1,8 @@
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTVTest.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\obj\Debug\HomeRunTVTest.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTV.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Common.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Controller.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Model.dll
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTV.pdb
-c:\users\win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\obj\Debug\HomeRunTVTest.csprojResolveAssemblyReference.cache
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTVTest.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTV.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Common.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Controller.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\MediaBrowser.Model.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\bin\Debug\HomeRunTV.pdb
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\obj\Debug\HomeRunTVTest.csprojResolveAssemblyReference.cache
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\HomeRunTVTest\obj\Debug\HomeRunTVTest.dll

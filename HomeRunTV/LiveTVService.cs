@@ -37,18 +37,22 @@ namespace HomeRunTV
         private TunerServer tunerServer;
         private Plugin _plugin;
         private readonly IXmlSerializer _xmlSerializer;
+        private GuideData.SchedulesDirect tvGuide;
+        private HomeRunTV.GeneralHelpers.HttpClientHelper httpHelper; 
 
 
         public LiveTvService(IHttpClient httpClient, IJsonSerializer jsonSerializer, ILogger logger, IXmlSerializer xmlSerializer)
         {
-            _httpClient = httpClient;
-            _jsonSerializer = jsonSerializer;
-            _logger = logger;
-            _plugin = Plugin.Instance;
+            httpHelper = new GeneralHelpers.HttpClientHelper();
+             httpHelper.httpClient = _httpClient = httpClient;
+             httpHelper.jsonSerializer = _jsonSerializer = jsonSerializer;
+             httpHelper.logger = _logger = logger;
+             httpHelper.xmlSerializer = _xmlSerializer = xmlSerializer;
+             _plugin = Plugin.Instance;
             Name = "Not Connected";
             tunerServer = new TunerServer(_plugin.Configuration.apiURL);
-            tunerServer.onlyLoadFavorites = _plugin.Configuration.loadOnlyFavorites;
-            _xmlSerializer = xmlSerializer;            
+            tunerServer.onlyLoadFavorites = _plugin.Configuration.loadOnlyFavorites;           
+            tvGuide = new GuideData.SchedulesDirect(_plugin.Configuration.username, _plugin.Configuration.hashPassword, _plugin.Configuration.tvLineUp);          
         }
 
         /// <summary>
@@ -59,6 +63,7 @@ namespace HomeRunTV
         private async Task EnsureConnectionAsync(CancellationToken cancellationToken)
         {
             var _httpOptions = new HttpRequestOptions{CancellationToken = cancellationToken};
+            httpHelper.cancellationToken = cancellationToken;
             if (string.IsNullOrEmpty(_plugin.Configuration.apiURL))
             {
                 _logger.Error("[HomeRunTV] Tunner hostname/ip missing.");
@@ -73,7 +78,8 @@ namespace HomeRunTV
             else
             {
                 Name = tunerServer.model;
-            }           
+            }
+            await tvGuide.getStatus(httpHelper);
         }
 
           /// <summary>
@@ -83,10 +89,14 @@ namespace HomeRunTV
         /// <returns>Task{IEnumerable{ChannelInfo}}.</returns>
         public async Task<IEnumerable<ChannelInfo>> GetChannelsAsync(CancellationToken cancellationToken)
         {
+            httpHelper.cancellationToken = cancellationToken;
             _logger.Info("[HomeRunTV] Start GetChannels Async, retrieve all channels for " + tunerServer.getWebUrl());
             await EnsureConnectionAsync(cancellationToken).ConfigureAwait(false);
+            await tvGuide.getToken(httpHelper);
             var _httpOptions = new HttpRequestOptions{CancellationToken = cancellationToken};
-            return await  tunerServer.GetChannels(_logger,_httpClient,_httpOptions,_jsonSerializer,_xmlSerializer);            
+            var response = await tunerServer.GetChannels(_logger,_httpClient,_httpOptions,_jsonSerializer,_xmlSerializer);
+            return await tvGuide.getChannelInfo(httpHelper, response); 
+            
         }
 
 
@@ -103,7 +113,8 @@ namespace HomeRunTV
 
         public Task CloseLiveStream(string id, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            _logger.Info("[HomeRunTV] Closing " + id);
+            return Task.FromResult(0);
         }
 
         public Task CreateSeriesTimerAsync(SeriesTimerInfo info, CancellationToken cancellationToken)
@@ -125,7 +136,7 @@ namespace HomeRunTV
 
         public Task<ImageStream> GetChannelImageAsync(string channelId, CancellationToken cancellationToken)
         {
-            return null;
+            throw new NotImplementedException();
         }
 
         public Task<ChannelMediaInfo> GetChannelStream(string channelId, CancellationToken cancellationToken)
@@ -153,9 +164,9 @@ namespace HomeRunTV
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<ProgramInfo>> GetProgramsAsync(string channelId, DateTime startDateUtc, DateTime endDateUtc, CancellationToken cancellationToken)
+        public async Task<IEnumerable<ProgramInfo>> GetProgramsAsync(string channelId, DateTime startDateUtc, DateTime endDateUtc, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return await tvGuide.getTvGuideForChannel(httpHelper,channelId);
         }
 
         public Task<ImageStream> GetRecordingImageAsync(string recordingId, CancellationToken cancellationToken)

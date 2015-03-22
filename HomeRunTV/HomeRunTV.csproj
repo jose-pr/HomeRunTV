@@ -56,8 +56,11 @@
   <ItemGroup>
     <Compile Include="Configuration\HomeRunTVConfigurationPage.cs" />
     <Compile Include="Configuration\PluginConfiguration.cs" />
-    <Compile Include="GeneralHelpers\HttpClient.cs" />
+    <Compile Include="GeneralHelpers\HttpClientHelper.cs" />
     <Compile Include="GeneralHelpers\Xml.cs" />
+    <Compile Include="GuideData\ITvGuideSupplier.cs" />
+    <Compile Include="GuideData\Responses\ScheduleDirect.cs" />
+    <Compile Include="GuideData\SchedulesDirect.cs" />
     <Compile Include="LiveTVService.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -71,6 +74,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="GuideData\NewFolder1\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
