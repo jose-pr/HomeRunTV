@@ -35,7 +35,7 @@ namespace HomeRunTV.GuideData
         }
         public async Task getToken(HttpClientHelper httpHelper)
         {
-            if (!(await getStatus(httpHelper)))
+            if (!(await getStatus(httpHelper)) && username.Length>0 && password.Length>0)
             {
                 httpHelper.httpOptions = new HttpRequestOptions()
                 {

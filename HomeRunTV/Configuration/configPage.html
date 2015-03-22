@@ -27,7 +27,7 @@
                             <input type="text" id="txtGuideUsername" name="txtGuideUsername" />
                         </li>
                         <li>
-                            <label for="txtGuideUsername">
+                            <label for="txtGuidePassword">
                                 Schedules Direct Password:
                             </label>
                             <input type="password" id="txtGuidePassword" name="txtGuidePassword" />
@@ -64,7 +64,7 @@
                     $('#txtWebServiceUrl', page).val(config.apiURL || "");
                     $('#txtGuideUsername', page).val(config.username || "");
                     $('#txtTvLineUp', page).val(config.tvLineUp || "");
-                    $('#txtGuidePassword', page).val("");
+                    //$('#txtGuidePassword', page).val("");
                     $('#chkLoadFavorites', page).checked(config.loadOnlyFavorites).checkboxradio("refresh");
                     Dashboard.hideLoadingMsg();
                 });
@@ -73,12 +73,13 @@
             $('.HomeRunTVConfigurationForm').on('submit', function (e) {
                 Dashboard.showLoadingMsg();
                 var form = this;
-                var pass = Sha1.hash($('#txtGuidePassword', form).val());
+                var pass="";
+                if ($('#txtGuidePassword', form).val() != "") { pass = Sha1.hash($('#txtGuidePassword', form).val()); }
                 ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
                     config.apiURL = $('#txtWebServiceUrl', form).val();
                     config.username = $('#txtGuideUsername', form).val();
                     config.tvLineUp = $('#txtTvLineUp', form).val();
-                    if ($('#txtGuidePassword', form).val() != "") { config.hashPassword = pass; }
+                    if (pass != "") { config.hashPassword = pass; }
                     config.loadOnlyFavorites = $('#chkLoadFavorites', form).checked();
                     ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
                 });

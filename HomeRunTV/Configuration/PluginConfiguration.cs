@@ -18,8 +18,8 @@ namespace HomeRunTV.Configuration
             apiURL = "localhost";
             loadOnlyFavorites = true;
             tvLineUp = "";
-            username = "user";
-            hashPassword = "Password";
+            username = "";
+            hashPassword = "";
         }
     }
 }
