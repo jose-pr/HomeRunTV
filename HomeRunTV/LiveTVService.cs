@@ -166,7 +166,7 @@ namespace HomeRunTV
 
         public async Task<IEnumerable<ProgramInfo>> GetProgramsAsync(string channelId, DateTime startDateUtc, DateTime endDateUtc, CancellationToken cancellationToken)
         {
-            return await tvGuide.getTvGuideForChannel(httpHelper,channelId);
+            return await tvGuide.getTvGuideForChannel(httpHelper,channelId,startDateUtc,endDateUtc);
         }
 
         public Task<ImageStream> GetRecordingImageAsync(string recordingId, CancellationToken cancellationToken)
@@ -181,12 +181,14 @@ namespace HomeRunTV
 
         public Task<IEnumerable<RecordingInfo>> GetRecordingsAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            IEnumerable < RecordingInfo > result = new List<RecordingInfo>();
+            return Task.FromResult(result);
         }
 
         public Task<IEnumerable<SeriesTimerInfo>> GetSeriesTimersAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            IEnumerable<SeriesTimerInfo> result = new List<SeriesTimerInfo>();
+            return Task.FromResult(result);
         }
 
         public async Task<LiveTvServiceStatusInfo> GetStatusInfoAsync(CancellationToken cancellationToken)
@@ -210,7 +212,8 @@ namespace HomeRunTV
 
         public Task<IEnumerable<TimerInfo>> GetTimersAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            IEnumerable<TimerInfo> result  = new List<TimerInfo>();
+            return Task.FromResult(result);
         }
 
         public string HomePageUrl

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.IO.Compression;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Net;
@@ -17,7 +18,7 @@ using HomeRunTV.GeneralHelpers;
 
 namespace HomeRunTV.GuideData
 {
-    class SchedulesDirect:ITvGuideSupplier
+    class SchedulesDirect : ITvGuideSupplier
     {
         public string username;
         public string lineup;
@@ -31,11 +32,38 @@ namespace HomeRunTV.GuideData
             this.username = username;
             this.password = password;
             this.lineup = lineup;
-            apiUrl = "https://json.schedulesdirect.org/20140530";
+            apiUrl = "https://json.schedulesdirect.org/20141201";
         }
         public async Task getToken(HttpClientHelper httpHelper)
         {
-            if (!(await getStatus(httpHelper)) && username.Length>0 && password.Length>0)
+
+            if (!(await getStatus(httpHelper)) && username.Length > 0 && password.Length > 0)
+            {
+                httpHelper.httpOptions = new HttpRequestOptions()
+                {
+                    Url = apiUrl + "/token",
+                    UserAgent = "Emby-Server",
+                    RequestContent = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}",
+                };
+                httpHelper.useCancellationToken();
+                httpHelper.logger.Info("[HomeRunTV] Obtaining token from Schedules Direct from addres: " + httpHelper.httpOptions.Url + " with body " + httpHelper.httpOptions.RequestContent);
+                try
+                {
+                    Stream responce = await httpHelper.Post();
+                    var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Token>(responce);
+                    if (root.message == "OK") { token = root.token; httpHelper.logger.Info("[HomeRunTV] Authenticated with Schedules Direct token: " + token); }
+                    else { httpHelper.logger.Error("[HomeRunTV] Could not authenticate with Schedules Direct Error: " + root.message); }
+                }
+                catch
+                {
+                    httpHelper.logger.Error("[HomeRunTV] Could not authenticate with Schedules Direct");
+                }
+            }
+        }
+        public async Task refreshToken(HttpClientHelper httpHelper)
+        {
+
+            if (username.Length > 0 && password.Length > 0)
             {
                 httpHelper.httpOptions = new HttpRequestOptions()
                 {
@@ -80,37 +108,40 @@ namespace HomeRunTV.GuideData
             catch
             {
                 httpHelper.logger.Error("[HomeRunTV] Error Determininig Schedule Direct Status");
+                return false;
             }
             return false;
         }
 
         public async Task<IEnumerable<ChannelInfo>> getChannelInfo(HttpClientHelper httpHelper, IEnumerable<ChannelInfo> channelsInfo)
         {
-            await getToken(httpHelper);
+            if (apiUrl != "https://json.schedulesdirect.org/20140530") { apiUrl = "https://json.schedulesdirect.org/20140530"; await refreshToken(httpHelper); }
+            else { await getToken(httpHelper); }
             httpHelper.httpOptions = new HttpRequestOptionsMod()
             {
-                Url = apiUrl + "/lineups/"+lineup,
+                Url = apiUrl + "/lineups/" + lineup,
                 UserAgent = "Emby-Server",
                 Token = token
             };
-            channelPair = new Dictionary<string,ScheduleDirect.Station>();
+            channelPair = new Dictionary<string, ScheduleDirect.Station>();
             var response = await httpHelper.Get();
             var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Channel>(response);
-            httpHelper.logger.Info("[HomeRunTV] Found "+root.map.Count()+" channels on the lineup on ScheduleDirect");
+            httpHelper.logger.Info("[HomeRunTV] Found " + root.map.Count() + " channels on the lineup on ScheduleDirect");
             foreach (ScheduleDirect.Map map in root.map)
             {
-               
-                channelPair.Add(map.channel,root.stations.First(item => item.stationID == map.stationID));
-                httpHelper.logger.Info("[HomeRunTV] Added " + map.channel + " " + channelPair[map.channel].name + " " + channelPair[map.channel].stationID);
+                channelPair.Add(map.channel, root.stations.First(item => item.stationID == map.stationID));
+                // httpHelper.logger.Info("[HomeRunTV] Added " + map.channel + " " + channelPair[map.channel].name + " " + channelPair[map.channel].stationID);
             }
-            httpHelper.logger.Info("[HomeRunTV] Added " + channelPair.Count() + " channels to the dictionary");
+            //httpHelper.logger.Info("[HomeRunTV] Added " + channelPair.Count() + " channels to the dictionary");
             string channelName;
-            foreach (ChannelInfo channel in channelsInfo){
-                httpHelper.logger.Info("[HomeRunTV] Modifyin channel " + channel.Number);
-                if (channelPair[channel.Number] != null) {
-                    if(channelPair[channel.Number].logo != null){channel.ImageUrl= channelPair[channel.Number].logo.URL;channel.HasImage=true;}
-                    if(channelPair[channel.Number].affiliate != null){channelName=channelPair[channel.Number].affiliate;}
-                    else{channelName=channelPair[channel.Number].name;}
+            foreach (ChannelInfo channel in channelsInfo)
+            {
+                //  httpHelper.logger.Info("[HomeRunTV] Modifyin channel " + channel.Number);
+                if (channelPair[channel.Number] != null)
+                {
+                    if (channelPair[channel.Number].logo != null) { channel.ImageUrl = channelPair[channel.Number].logo.URL; channel.HasImage = true; }
+                    if (channelPair[channel.Number].affiliate != null) { channelName = channelPair[channel.Number].affiliate; }
+                    else { channelName = channelPair[channel.Number].name; }
                     channel.Name = channelName;
                     //channel.Id = channelPair[channel.Number].stationID;
                 }
@@ -118,75 +149,163 @@ namespace HomeRunTV.GuideData
             return channelsInfo;
         }
 
-        public async Task<IEnumerable<ProgramInfo>> getTvGuideForChannel(HttpClientHelper httpHelper, string channelNumber)
+        public async Task<IEnumerable<ProgramInfo>> getTvGuideForChannel(HttpClientHelper httpHelper, string channelNumber, DateTime start, DateTime end)
         {
-            await getToken(httpHelper);
-            httpHelper.httpOptions = new HttpRequestOptionsMod()
+     
+            if (apiUrl != "https://json.schedulesdirect.org/20141201") { apiUrl = "https://json.schedulesdirect.org/20141201"; await refreshToken(httpHelper); }
+            else { await getToken(httpHelper); }
+            HttpRequestOptionsMod httpOptions = new HttpRequestOptionsMod()
             {
                 Url = apiUrl + "/schedules",
                 UserAgent = "Emby-Server",
                 Token = token
             };
-            long id = 0;
-            string stationID = channelPair[channelNumber].stationID;
-            List<ScheduleDirect.RequestScheduleForChannel> requestList = new List<ScheduleDirect.RequestScheduleForChannel>() { new ScheduleDirect.RequestScheduleForChannel() { stationID = stationID, date = new List<string>() { "2015-03-23", "2015-03-24" } } };
-            httpHelper.httpOptions.RequestContent = httpHelper.jsonSerializer.SerializeToString(requestList);
-            var response = await httpHelper.Post();
-            var root = httpHelper.jsonSerializer.DeserializeFromStream<List<ScheduleDirect.Schedules>>(response);
-           // httpHelper.logger.Info("[HomeRunTV] Found " + root.Count() + " programs on "+channelNumber +" ScheduleDirect");
-            List<ProgramInfo> programsInfo = new List<ProgramInfo>();
-            foreach (ScheduleDirect.Program schedule in root[0].programs)
+
+            httpHelper.httpOptions = httpOptions;
+            List<string> dates = new List<string>();
+            double numberOfDay = 0;
+            DateTime lastEntry = start;
+            while (lastEntry != end)
             {
-               // httpHelper.logger.Info("[HomeRunTV] Proccesing Schedule for statio ID " +stationID+" which corresponds to channel" +channelNumber+" and program id "+ schedule.programID);
-                
-                programsInfo.Add(GetProgram(channelNumber, schedule,httpHelper.logger));
+                lastEntry=start.AddDays(numberOfDay);
+                dates.Add(lastEntry.ToString("yyyy-MM-dd"));
+                numberOfDay++;
+            }
+            string stationID = channelPair[channelNumber].stationID;
+            List<ScheduleDirect.RequestScheduleForChannel> requestList = new List<ScheduleDirect.RequestScheduleForChannel>() { 
+                new ScheduleDirect.RequestScheduleForChannel() { 
+                   stationID = stationID, date = dates } };            
+            httpHelper.logger.Info("[HomeRunTV] Request string for schedules is: " + httpHelper.jsonSerializer.SerializeToString(requestList));
+            httpHelper.httpOptions.RequestContent = httpHelper.jsonSerializer.SerializeToString(requestList);         
+            var response = await httpHelper.Post();
+            StreamReader reader = new StreamReader(response);
+            string responseString = reader.ReadToEnd();
+            responseString = "{ \"days\":" + responseString + "}";
+            var root = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.Schedules>(responseString);
+            // httpHelper.logger.Info("[HomeRunTV] Found " + root.Count() + " programs on "+channelNumber +" ScheduleDirect");
+            List<ProgramInfo> programsInfo = new List<ProgramInfo>();
+            httpOptions = new HttpRequestOptionsMod()
+            {
+                Url = apiUrl + "/programs",
+                UserAgent = "Emby-Server",
+                Token = token
+            };
+            httpOptions.SetRequestHeader("Accept-Encoding", "deflate,gzip");
+            httpHelper.httpOptions = httpOptions;
+            string requestBody = "";
+            List<string> programsID = new List<string>();
+            foreach (ScheduleDirect.Day day in root.days)
+            {
+                foreach (ScheduleDirect.Program schedule in day.programs)
+                {
+                    programsID.Add(schedule.programID);
+                }
+            }
+            programsID = programsID.Distinct().ToList();
+
+            requestBody = "[\"" + string.Join("\", \"", programsID.ToArray()) + "\"]";
+
+            httpHelper.logger.Info("[HomeRunTV] Duplicates" + requestBody);
+
+            httpHelper.httpOptions.RequestContent = requestBody;
+            response = await httpHelper.Post();
+            GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
+            reader = new StreamReader(ds);
+            responseString = reader.ReadToEnd();
+            responseString = "{ \"result\":" + responseString + "}";
+            var programDetails = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.ProgramDetailsResilt>(responseString);
+            //   httpHelper.logger.Info("[HomeRunTV] Response " + responseString);
+            Dictionary<string, ScheduleDirect.ProgramDetails> programDict = programDetails.result.ToDictionary(p => p.programID, y => y);
+            //  httpHelper.logger.Info("[HomeRunTV] Dict size " + programDict.Count());
+            foreach (ScheduleDirect.Day day in root.days)
+            {
+                foreach (ScheduleDirect.Program schedule in day.programs)
+                {
+                    // httpHelper.logger.Info("[HomeRunTV] Proccesing Schedule for statio ID " +stationID+" which corresponds to channel" +channelNumber+" and program id "+ schedule.programID);
+                    programsInfo.Add(GetProgram(channelNumber, schedule, httpHelper.logger, programDict[schedule.programID]));
+                }
             }
             return programsInfo;
         }
-        private ProgramInfo GetProgram(string channel, ScheduleDirect.Program programInfo,ILogger logger)
+        private ProgramInfo GetProgram(string channel, ScheduleDirect.Program programInfo, ILogger logger, ScheduleDirect.ProgramDetails details)
         {
             DateTime startAt = DateTime.Parse(programInfo.airDateTime);
-         //   logger.Info("[HomeRunTV] Proccesing Schedule info" + startAt);
+            logger.Info("Date enter as: " + programInfo.airDateTime + " Date read as: " + startAt);
+            //   logger.Info("[HomeRunTV] Proccesing Schedule info" + startAt);
             DateTime endAt = startAt.AddSeconds(programInfo.duration);
-          //  logger.Info("[HomeRunTV] Proccesing Schedule info" + endAt);
+            //  logger.Info("[HomeRunTV] Proccesing Schedule info" + endAt);
             ProgramAudio audioType = ProgramAudio.Mono;
             bool hdtv = false;
             bool repeat = (programInfo.@new == null);
             string newID = programInfo.programID + "T" + startAt.Ticks + "C" + channel;
 
-            logger.Info("[HomeRunTV] Proccesing Schedule ID" + newID);
+            //logger.Info("[HomeRunTV] Proccesing Schedule ID" + newID);
             if (programInfo.audioProperties != null) { if (programInfo.audioProperties.Exists(item => item == "stereo")) { audioType = ProgramAudio.Stereo; } else { audioType = ProgramAudio.Mono; } }
-           // logger.Info("[HomeRunTV] Proccesing Schedule info" + audioType.ToString());
-           // logger.Info("[HomeRunTV] Proccesing Schedule info video null " + (programInfo.videoProperties == null));
+            // logger.Info("[HomeRunTV] Proccesing Schedule info" + audioType.ToString());
+            // logger.Info("[HomeRunTV] Proccesing Schedule info video null " + (programInfo.videoProperties == null));
             if ((programInfo.videoProperties != null)) { hdtv = programInfo.videoProperties.Exists(item => item == "hdtv"); }
-            
-           // logger.Info("[HomeRunTV] Proccesing Schedule info" + hdtv.ToString());
+
+            // logger.Info("[HomeRunTV] Proccesing Schedule info" + hdtv.ToString());
+            string desc = "";
+            if (details.descriptions != null)
+            {
+                if (details.descriptions.description1000 != null) { desc = details.descriptions.description1000[0].description; }
+                else if (details.descriptions.description100 != null) { desc = details.descriptions.description100[0].description; }
+            }
+            ScheduleDirect.Gracenote gracenote;
+            string EpisodeTitle = "";
+            if (details.metadata != null)
+            {
+                gracenote = details.metadata.Find(x => x.Gracenote != null).Gracenote;
+                if (details.eventDetails.subType == "Series") { EpisodeTitle = "Season: " + gracenote.season + " Episode: " + gracenote.episode; }
+            }
+            DateTime date;
+
+
             var info = new ProgramInfo
             {
                 ChannelId = channel,
                 Id = newID,
-                Overview = "",
+                Overview = desc,
                 StartDate = startAt,
                 EndDate = endAt,
-                Genres = null,
-                OriginalAirDate = null,
-                Name = "test",
+                Genres = details.genres,
+                Name = details.titles[0].title120 ?? "Unkown",
                 OfficialRating = null,
                 CommunityRating = null,
-                EpisodeTitle = null,
+                EpisodeTitle = EpisodeTitle,
                 Audio = audioType,
                 IsHD = hdtv,
                 IsRepeat = repeat,
-                IsSeries = true,
+                IsSeries = (details.eventDetails.subType == "Series"),
                 ImageUrl = null,
                 HasImage = null,
-                IsNews = false,
-                IsMovie = false,
-                IsKids = false,
-                IsSports = false
             };
+            if (null != details.originalAirDate)
+            {
+                info.OriginalAirDate = DateTime.Parse(details.originalAirDate);
+            }
+            if (details.genres != null)
+            {
+                info.IsNews = details.genres.Contains("news", StringComparer.OrdinalIgnoreCase);
+                info.IsMovie = details.genres.Contains("movie", StringComparer.OrdinalIgnoreCase);
+                info.IsKids = false;
+                info.IsSports = details.genres.Contains("sports", StringComparer.OrdinalIgnoreCase) ||
+                    details.genres.Contains("Sports non-event", StringComparer.OrdinalIgnoreCase) ||
+                    details.genres.Contains("Sports event", StringComparer.OrdinalIgnoreCase) ||
+                    details.genres.Contains("Sports talk", StringComparer.OrdinalIgnoreCase) ||
+                    details.genres.Contains("Sports news", StringComparer.OrdinalIgnoreCase);
+            }
 
             return info;
+        }
+        public bool checkExist(object obj)
+        {
+            if (obj != null)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }
