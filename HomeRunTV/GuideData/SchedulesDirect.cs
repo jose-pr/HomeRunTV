@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Compression;
+using System.Globalization;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Net;
@@ -194,29 +195,45 @@ namespace HomeRunTV.GuideData
             httpHelper.httpOptions = httpOptions;
             string requestBody = "";
             List<string> programsID = new List<string>();
+            List<string> imageID = new List<string>();
             foreach (ScheduleDirect.Day day in root.days)
             {
                 foreach (ScheduleDirect.Program schedule in day.programs)
                 {
                     programsID.Add(schedule.programID);
+                    imageID.Add(schedule.programID.Substring(0, 10));
                 }
             }
+
             programsID = programsID.Distinct().ToList();
+            imageID = imageID.Distinct().ToList();
 
             requestBody = "[\"" + string.Join("\", \"", programsID.ToArray()) + "\"]";
-
-            httpHelper.logger.Info("[HomeRunTV] Duplicates" + requestBody);
-
             httpHelper.httpOptions.RequestContent = requestBody;
             response = await httpHelper.Post();
             GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
             reader = new StreamReader(ds);
             responseString = reader.ReadToEnd();
             responseString = "{ \"result\":" + responseString + "}";
+
             var programDetails = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.ProgramDetailsResilt>(responseString);
-            //   httpHelper.logger.Info("[HomeRunTV] Response " + responseString);
             Dictionary<string, ScheduleDirect.ProgramDetails> programDict = programDetails.result.ToDictionary(p => p.programID, y => y);
-            //  httpHelper.logger.Info("[HomeRunTV] Dict size " + programDict.Count());
+
+            /*
+            httpOptions = new HttpRequestOptionsMod()
+            {
+                Url = apiUrl + "https://json.schedulesdirect.org/20140530/metadata/programs/",
+                UserAgent = "Emby-Server",
+            };              
+            requestBody = "[\"" + string.Join("\", \"", imageID.ToArray()) + "\"]";
+            httpHelper.httpOptions.RequestContent = requestBody;
+            response = await httpHelper.Post();
+            reader = new StreamReader(response);
+            responseString = reader.ReadToEnd();
+            responseString = "{ \"results\":" + responseString + "}";
+            
+            */
+
             foreach (ScheduleDirect.Day day in root.days)
             {
                 foreach (ScheduleDirect.Program schedule in day.programs)
@@ -225,12 +242,13 @@ namespace HomeRunTV.GuideData
                     programsInfo.Add(GetProgram(channelNumber, schedule, httpHelper.logger, programDict[schedule.programID]));
                 }
             }
+            httpHelper.logger.Info("Finished with TVData");
             return programsInfo;
         }
         private ProgramInfo GetProgram(string channel, ScheduleDirect.Program programInfo, ILogger logger, ScheduleDirect.ProgramDetails details)
         {
-            DateTime startAt = DateTime.Parse(programInfo.airDateTime);
-            logger.Info("Date enter as: " + programInfo.airDateTime + " Date read as: " + startAt);
+            DateTime startAt = DateTime.ParseExact(programInfo.airDateTime, "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'", CultureInfo.InvariantCulture);
+            //logger.Info("Date enter as: " + programInfo.airDateTime + " Date read as: " + startAt);
             //   logger.Info("[HomeRunTV] Proccesing Schedule info" + startAt);
             DateTime endAt = startAt.AddSeconds(programInfo.duration);
             //  logger.Info("[HomeRunTV] Proccesing Schedule info" + endAt);
@@ -258,10 +276,12 @@ namespace HomeRunTV.GuideData
             {
                 gracenote = details.metadata.Find(x => x.Gracenote != null).Gracenote;
                 if (details.eventDetails.subType == "Series") { EpisodeTitle = "Season: " + gracenote.season + " Episode: " + gracenote.episode; }
+                if (details.episodeTitle150 != null) { EpisodeTitle = EpisodeTitle+" "+details.episodeTitle150; }
             }
+            if (details.episodeTitle150 != null) { EpisodeTitle = EpisodeTitle + " " + details.episodeTitle150; }
             DateTime date;
-
-
+            bool hasImage = false;
+            //if (details.hasImageArtwork != null) { hasImage = true; }
             var info = new ProgramInfo
             {
                 ChannelId = channel,
@@ -269,26 +289,36 @@ namespace HomeRunTV.GuideData
                 Overview = desc,
                 StartDate = startAt,
                 EndDate = endAt,
-                Genres = details.genres,
+                Genres = new List<string>(){"N/A"},
                 Name = details.titles[0].title120 ?? "Unkown",
-                OfficialRating = null,
+                OfficialRating = "0",
                 CommunityRating = null,
                 EpisodeTitle = EpisodeTitle,
                 Audio = audioType,
                 IsHD = hdtv,
                 IsRepeat = repeat,
                 IsSeries = (details.eventDetails.subType == "Series"),
-                ImageUrl = null,
-                HasImage = null,
+                ImageUrl = "",
+                HasImage = false,
+                IsNews = false,
+                IsKids = false,
+                IsSports = false,
+                IsLive = false,
+                IsMovie = false,
+                IsPremiere = false,
+                
             };
+            //logger.Info("Done init");
             if (null != details.originalAirDate)
             {
                 info.OriginalAirDate = DateTime.Parse(details.originalAirDate);
             }
+
             if (details.genres != null)
             {
+                info.Genres = details.genres.Where(g => !string.IsNullOrWhiteSpace(g)).ToList();
                 info.IsNews = details.genres.Contains("news", StringComparer.OrdinalIgnoreCase);
-                info.IsMovie = details.genres.Contains("movie", StringComparer.OrdinalIgnoreCase);
+                info.IsMovie = details.genres.Contains("Feature Film", StringComparer.OrdinalIgnoreCase) || (details.movie != null); 
                 info.IsKids = false;
                 info.IsSports = details.genres.Contains("sports", StringComparer.OrdinalIgnoreCase) ||
                     details.genres.Contains("Sports non-event", StringComparer.OrdinalIgnoreCase) ||
@@ -296,7 +326,6 @@ namespace HomeRunTV.GuideData
                     details.genres.Contains("Sports talk", StringComparer.OrdinalIgnoreCase) ||
                     details.genres.Contains("Sports news", StringComparer.OrdinalIgnoreCase);
             }
-
             return info;
         }
         public bool checkExist(object obj)
