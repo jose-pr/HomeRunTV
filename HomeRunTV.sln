@@ -5,8 +5,6 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeRunTV", "HomeRunTV\HomeRunTV.csproj", "{2B05D1F9-79D2-452F-B311-0A603C57BB22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeRunTVTest", "HomeRunTVTest\HomeRunTVTest.csproj", "{4848065E-7371-472B-A63C-929C773168EE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{2B05D1F9-79D2-452F-B311-0A603C57BB22}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B05D1F9-79D2-452F-B311-0A603C57BB22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B05D1F9-79D2-452F-B311-0A603C57BB22}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4848065E-7371-472B-A63C-929C773168EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4848065E-7371-472B-A63C-929C773168EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4848065E-7371-472B-A63C-929C773168EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4848065E-7371-472B-A63C-929C773168EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

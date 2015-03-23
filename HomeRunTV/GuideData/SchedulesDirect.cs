@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.IO.Compression;
+using SharpCompress.Compressor.Deflate;
 using System.Globalization;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -16,6 +16,7 @@ using MediaBrowser.Controller.Channels;
 using MediaBrowser.Model.LiveTv;
 using HomeRunTV.GuideData.Responses;
 using HomeRunTV.GeneralHelpers;
+
 
 namespace HomeRunTV.GuideData
 {
@@ -211,7 +212,8 @@ namespace HomeRunTV.GuideData
             requestBody = "[\"" + string.Join("\", \"", programsID.ToArray()) + "\"]";
             httpHelper.httpOptions.RequestContent = requestBody;
             response = await httpHelper.Post();
-            GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
+            
+            GZipStream ds = new GZipStream(response, SharpCompress.Compressor.CompressionMode.Decompress);
             reader = new StreamReader(ds);
             responseString = reader.ReadToEnd();
             responseString = "{ \"result\":" + responseString + "}";

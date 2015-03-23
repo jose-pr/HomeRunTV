@@ -1,0 +1,4 @@
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\TestSharp\bin\Debug\TestSharp.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\TestSharp\bin\Debug\TestSharp.pdb
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\TestSharp\obj\Debug\TestSharp.dll
+C:\Users\Win10\documents\visual studio 2013\Projects\HomeRunTV\TestSharp\obj\Debug\TestSharp.pdb
