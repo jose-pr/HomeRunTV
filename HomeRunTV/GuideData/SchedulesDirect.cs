@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using SharpCompress.Compressor.Deflate;
+using System.IO.Compression;
 using System.Globalization;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -104,7 +104,20 @@ namespace HomeRunTV.GuideData
             {
                 Stream responce = await httpHelper.Get().ConfigureAwait(false);
                 var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Status>(responce);
+
                 if (root.systemStatus[0] != null) { httpHelper.logger.Info("[HomeRunTV] Schedules Direct status: " + root.systemStatus[0].status); }
+                httpHelper.logger.Info("[HomeRunTV] Lineups on account");
+                if (root.lineups != null)
+                {
+                    foreach (ScheduleDirect.Lineup lineup in root.lineups)
+                    {
+                        httpHelper.logger.Info("[HomeRunTV] Lineups ID: "+lineup.ID);
+                    }
+                }
+                else
+                {
+                    httpHelper.logger.Info("[HomeRunTV] No lineups on account");
+                }
                 return true;
             }
             catch
@@ -213,7 +226,7 @@ namespace HomeRunTV.GuideData
             httpHelper.httpOptions.RequestContent = requestBody;
             response = await httpHelper.Post();
             
-            GZipStream ds = new GZipStream(response, SharpCompress.Compressor.CompressionMode.Decompress);
+            GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
             reader = new StreamReader(ds);
             responseString = reader.ReadToEnd();
             responseString = "{ \"result\":" + responseString + "}";
