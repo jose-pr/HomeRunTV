@@ -34,7 +34,7 @@ namespace HomeRunTV.GuideData
             this.username = username;
             this.password = password;
             this.lineup = lineup;
-            apiUrl = "https://json.schedulesdirect.org/20141201";
+            apiUrl = "https://json.schedulesdirect.org/20140530";
         }
         public async Task getToken(HttpClientHelper httpHelper)
         {
@@ -132,33 +132,36 @@ namespace HomeRunTV.GuideData
         {
             if (apiUrl != "https://json.schedulesdirect.org/20140530") { apiUrl = "https://json.schedulesdirect.org/20140530"; await refreshToken(httpHelper); }
             else { await getToken(httpHelper); }
-            httpHelper.httpOptions = new HttpRequestOptionsMod()
+            if (lineup != "Not Selected")
             {
-                Url = apiUrl + "/lineups/" + lineup,
-                UserAgent = "Emby-Server",
-                Token = token
-            };
-            channelPair = new Dictionary<string, ScheduleDirect.Station>();
-            var response = await httpHelper.Get();
-            var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Channel>(response);
-            httpHelper.logger.Info("[HomeRunTV] Found " + root.map.Count() + " channels on the lineup on ScheduleDirect");
-            foreach (ScheduleDirect.Map map in root.map)
-            {
-                channelPair.Add(map.channel, root.stations.First(item => item.stationID == map.stationID));
-                // httpHelper.logger.Info("[HomeRunTV] Added " + map.channel + " " + channelPair[map.channel].name + " " + channelPair[map.channel].stationID);
-            }
-            //httpHelper.logger.Info("[HomeRunTV] Added " + channelPair.Count() + " channels to the dictionary");
-            string channelName;
-            foreach (ChannelInfo channel in channelsInfo)
-            {
-                //  httpHelper.logger.Info("[HomeRunTV] Modifyin channel " + channel.Number);
-                if (channelPair[channel.Number] != null)
+                httpHelper.httpOptions = new HttpRequestOptionsMod()
                 {
-                    if (channelPair[channel.Number].logo != null) { channel.ImageUrl = channelPair[channel.Number].logo.URL; channel.HasImage = true; }
-                    if (channelPair[channel.Number].affiliate != null) { channelName = channelPair[channel.Number].affiliate; }
-                    else { channelName = channelPair[channel.Number].name; }
-                    channel.Name = channelName;
-                    //channel.Id = channelPair[channel.Number].stationID;
+                    Url = apiUrl + "/lineups/" + lineup,
+                    UserAgent = "Emby-Server",
+                    Token = token
+                };
+                channelPair = new Dictionary<string, ScheduleDirect.Station>();
+                var response = await httpHelper.Get();
+                var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Channel>(response);
+                httpHelper.logger.Info("[HomeRunTV] Found " + root.map.Count() + " channels on the lineup on ScheduleDirect");
+                foreach (ScheduleDirect.Map map in root.map)
+                {
+                    channelPair.Add(map.channel, root.stations.First(item => item.stationID == map.stationID));
+                    // httpHelper.logger.Info("[HomeRunTV] Added " + map.channel + " " + channelPair[map.channel].name + " " + channelPair[map.channel].stationID);
+                }
+                //httpHelper.logger.Info("[HomeRunTV] Added " + channelPair.Count() + " channels to the dictionary");
+                string channelName;
+                foreach (ChannelInfo channel in channelsInfo)
+                {
+                    //  httpHelper.logger.Info("[HomeRunTV] Modifyin channel " + channel.Number);
+                    if (channelPair[channel.Number] != null)
+                    {
+                        if (channelPair[channel.Number].logo != null) { channel.ImageUrl = channelPair[channel.Number].logo.URL; channel.HasImage = true; }
+                        if (channelPair[channel.Number].affiliate != null) { channelName = channelPair[channel.Number].affiliate; }
+                        else { channelName = channelPair[channel.Number].name; }
+                        channel.Name = channelName;
+                        //channel.Id = channelPair[channel.Number].stationID;
+                    }
                 }
             }
             return channelsInfo;
@@ -166,99 +169,106 @@ namespace HomeRunTV.GuideData
 
         public async Task<IEnumerable<ProgramInfo>> getTvGuideForChannel(HttpClientHelper httpHelper, string channelNumber, DateTime start, DateTime end)
         {
-     
-            if (apiUrl != "https://json.schedulesdirect.org/20141201") { apiUrl = "https://json.schedulesdirect.org/20141201"; await refreshToken(httpHelper); }
-            else { await getToken(httpHelper); }
-            HttpRequestOptionsMod httpOptions = new HttpRequestOptionsMod()
+            if (lineup != "Not Selected")
             {
-                Url = apiUrl + "/schedules",
-                UserAgent = "Emby-Server",
-                Token = token
-            };
 
-            httpHelper.httpOptions = httpOptions;
-            List<string> dates = new List<string>();
-            double numberOfDay = 0;
-            DateTime lastEntry = start;
-            while (lastEntry != end)
-            {
-                lastEntry=start.AddDays(numberOfDay);
-                dates.Add(lastEntry.ToString("yyyy-MM-dd"));
-                numberOfDay++;
-            }
-            string stationID = channelPair[channelNumber].stationID;
-            List<ScheduleDirect.RequestScheduleForChannel> requestList = new List<ScheduleDirect.RequestScheduleForChannel>() { 
+                if (apiUrl != "https://json.schedulesdirect.org/20141201") { apiUrl = "https://json.schedulesdirect.org/20141201"; await refreshToken(httpHelper); }
+                else { await getToken(httpHelper); }
+                HttpRequestOptionsMod httpOptions = new HttpRequestOptionsMod()
+                {
+                    Url = apiUrl + "/schedules",
+                    UserAgent = "Emby-Server",
+                    Token = token
+                };
+
+                httpHelper.httpOptions = httpOptions;
+                List<string> dates = new List<string>();
+                double numberOfDay = 0;
+                DateTime lastEntry = start;
+                while (lastEntry != end)
+                {
+                    lastEntry = start.AddDays(numberOfDay);
+                    dates.Add(lastEntry.ToString("yyyy-MM-dd"));
+                    numberOfDay++;
+                }
+                string stationID = channelPair[channelNumber].stationID;
+                List<ScheduleDirect.RequestScheduleForChannel> requestList = new List<ScheduleDirect.RequestScheduleForChannel>() { 
                 new ScheduleDirect.RequestScheduleForChannel() { 
-                   stationID = stationID, date = dates } };            
-            httpHelper.logger.Info("[HomeRunTV] Request string for schedules is: " + httpHelper.jsonSerializer.SerializeToString(requestList));
-            httpHelper.httpOptions.RequestContent = httpHelper.jsonSerializer.SerializeToString(requestList);         
-            var response = await httpHelper.Post();
-            StreamReader reader = new StreamReader(response);
-            string responseString = reader.ReadToEnd();
-            responseString = "{ \"days\":" + responseString + "}";
-            var root = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.Schedules>(responseString);
-            // httpHelper.logger.Info("[HomeRunTV] Found " + root.Count() + " programs on "+channelNumber +" ScheduleDirect");
-            List<ProgramInfo> programsInfo = new List<ProgramInfo>();
-            httpOptions = new HttpRequestOptionsMod()
-            {
-                Url = apiUrl + "/programs",
-                UserAgent = "Emby-Server",
-                Token = token
-            };
-            httpOptions.SetRequestHeader("Accept-Encoding", "deflate,gzip");
-            httpHelper.httpOptions = httpOptions;
-            string requestBody = "";
-            List<string> programsID = new List<string>();
-            List<string> imageID = new List<string>();
-            foreach (ScheduleDirect.Day day in root.days)
-            {
-                foreach (ScheduleDirect.Program schedule in day.programs)
+                   stationID = stationID, date = dates } };
+                httpHelper.logger.Info("[HomeRunTV] Request string for schedules is: " + httpHelper.jsonSerializer.SerializeToString(requestList));
+                httpHelper.httpOptions.RequestContent = httpHelper.jsonSerializer.SerializeToString(requestList);
+                var response = await httpHelper.Post();
+                StreamReader reader = new StreamReader(response);
+                string responseString = reader.ReadToEnd();
+                responseString = "{ \"days\":" + responseString + "}";
+                var root = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.Schedules>(responseString);
+                // httpHelper.logger.Info("[HomeRunTV] Found " + root.Count() + " programs on "+channelNumber +" ScheduleDirect");
+                List<ProgramInfo> programsInfo = new List<ProgramInfo>();
+                httpOptions = new HttpRequestOptionsMod()
                 {
-                    programsID.Add(schedule.programID);
-                    imageID.Add(schedule.programID.Substring(0, 10));
-                }
-            }
-
-            programsID = programsID.Distinct().ToList();
-            imageID = imageID.Distinct().ToList();
-
-            requestBody = "[\"" + string.Join("\", \"", programsID.ToArray()) + "\"]";
-            httpHelper.httpOptions.RequestContent = requestBody;
-            response = await httpHelper.Post();
-            
-            GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
-            reader = new StreamReader(ds);
-            responseString = reader.ReadToEnd();
-            responseString = "{ \"result\":" + responseString + "}";
-
-            var programDetails = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.ProgramDetailsResilt>(responseString);
-            Dictionary<string, ScheduleDirect.ProgramDetails> programDict = programDetails.result.ToDictionary(p => p.programID, y => y);
-
-            /*
-            httpOptions = new HttpRequestOptionsMod()
-            {
-                Url = apiUrl + "https://json.schedulesdirect.org/20140530/metadata/programs/",
-                UserAgent = "Emby-Server",
-            };              
-            requestBody = "[\"" + string.Join("\", \"", imageID.ToArray()) + "\"]";
-            httpHelper.httpOptions.RequestContent = requestBody;
-            response = await httpHelper.Post();
-            reader = new StreamReader(response);
-            responseString = reader.ReadToEnd();
-            responseString = "{ \"results\":" + responseString + "}";
-            
-            */
-
-            foreach (ScheduleDirect.Day day in root.days)
-            {
-                foreach (ScheduleDirect.Program schedule in day.programs)
+                    Url = apiUrl + "/programs",
+                    UserAgent = "Emby-Server",
+                    Token = token
+                };
+                httpOptions.SetRequestHeader("Accept-Encoding", "deflate,gzip");
+                httpHelper.httpOptions = httpOptions;
+                string requestBody = "";
+                List<string> programsID = new List<string>();
+                List<string> imageID = new List<string>();
+                foreach (ScheduleDirect.Day day in root.days)
                 {
-                    // httpHelper.logger.Info("[HomeRunTV] Proccesing Schedule for statio ID " +stationID+" which corresponds to channel" +channelNumber+" and program id "+ schedule.programID);
-                    programsInfo.Add(GetProgram(channelNumber, schedule, httpHelper.logger, programDict[schedule.programID]));
+                    foreach (ScheduleDirect.Program schedule in day.programs)
+                    {
+                        programsID.Add(schedule.programID);
+                        imageID.Add(schedule.programID.Substring(0, 10));
+                    }
                 }
+
+                programsID = programsID.Distinct().ToList();
+                imageID = imageID.Distinct().ToList();
+
+                requestBody = "[\"" + string.Join("\", \"", programsID.ToArray()) + "\"]";
+                httpHelper.httpOptions.RequestContent = requestBody;
+                response = await httpHelper.Post();
+
+                GZipStream ds = new GZipStream(response, CompressionMode.Decompress);
+                reader = new StreamReader(ds);
+                responseString = reader.ReadToEnd();
+                responseString = "{ \"result\":" + responseString + "}";
+
+                var programDetails = httpHelper.jsonSerializer.DeserializeFromString<ScheduleDirect.ProgramDetailsResilt>(responseString);
+                Dictionary<string, ScheduleDirect.ProgramDetails> programDict = programDetails.result.ToDictionary(p => p.programID, y => y);
+
+                /*
+                httpOptions = new HttpRequestOptionsMod()
+                {
+                    Url = apiUrl + "https://json.schedulesdirect.org/20140530/metadata/programs/",
+                    UserAgent = "Emby-Server",
+                };              
+                requestBody = "[\"" + string.Join("\", \"", imageID.ToArray()) + "\"]";
+                httpHelper.httpOptions.RequestContent = requestBody;
+                response = await httpHelper.Post();
+                reader = new StreamReader(response);
+                responseString = reader.ReadToEnd();
+                responseString = "{ \"results\":" + responseString + "}";
+            
+                */
+
+                foreach (ScheduleDirect.Day day in root.days)
+                {
+                    foreach (ScheduleDirect.Program schedule in day.programs)
+                    {
+                        // httpHelper.logger.Info("[HomeRunTV] Proccesing Schedule for statio ID " +stationID+" which corresponds to channel" +channelNumber+" and program id "+ schedule.programID);
+                        programsInfo.Add(GetProgram(channelNumber, schedule, httpHelper.logger, programDict[schedule.programID]));
+                    }
+                }
+                httpHelper.logger.Info("Finished with TVData");
+                return programsInfo;
             }
-            httpHelper.logger.Info("Finished with TVData");
-            return programsInfo;
+            else
+            {
+                return (IEnumerable<ProgramInfo>)new List<ProgramAudio>();
+            }
         }
         private ProgramInfo GetProgram(string channel, ScheduleDirect.Program programInfo, ILogger logger, ScheduleDirect.ProgramDetails details)
         {
@@ -350,6 +360,48 @@ namespace HomeRunTV.GuideData
                 return true;
             }
             return false;
+        }
+        public async Task<string> getLineups(HttpClientHelper httpHelper)
+        {
+            if (apiUrl != "https://json.schedulesdirect.org/20141201") { apiUrl = "https://json.schedulesdirect.org/20140530"; await refreshToken(httpHelper); }
+            httpHelper.httpOptions = new HttpRequestOptionsMod()
+            {
+                Url = apiUrl + "/status",
+                UserAgent = "Emby-Server",
+                Token = token
+            };
+            httpHelper.useCancellationToken();
+            string Lineups ="";
+            try
+            {
+                Stream responce = await httpHelper.Get().ConfigureAwait(false);
+                var root = httpHelper.jsonSerializer.DeserializeFromStream<ScheduleDirect.Status>(responce);
+
+                if (root.systemStatus[0] != null) { httpHelper.logger.Info("[HomeRunTV] Schedules Direct status: " + root.systemStatus[0].status); }
+                httpHelper.logger.Info("[HomeRunTV] Lineups on account");
+                if (root.lineups != null)
+                {
+                    foreach (ScheduleDirect.Lineup lineup in root.lineups)
+                    {
+                        httpHelper.logger.Info("[HomeRunTV] Lineups ID: " + lineup.ID);
+                        if (String.IsNullOrWhiteSpace(Lineups))
+                        {
+                            Lineups = lineup.ID;
+                        }
+                        else { Lineups = Lineups + "," + lineup.ID; }
+                    }
+                }
+                else
+                {
+                    httpHelper.logger.Info("[HomeRunTV] No lineups on account");
+                }
+            }
+            catch
+            {
+                httpHelper.logger.Error("[HomeRunTV] Error Determininig Schedule Direct Status");
+                return Lineups;
+            }
+            return Lineups;
         }
     }
 }

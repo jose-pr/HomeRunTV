@@ -9,45 +9,55 @@
         <div data-role="content">
             <div class="content-primary">
                 <form class="HomeRunTVConfigurationForm">
-
+                    <fieldset>
+                        <legend>Network Tunner</legend>
+                        <ul class="ulForm" data-role="listview">
+                            <li>
+                                <label for="txtWebServiceUrl">
+                                    HomeRun hostname or IP address:
+                                </label>
+                                <input type="text" id="txtWebServiceUrl" name="txtWebServiceUrl" />
+                                <div class="fieldDescription">
+                                    Tunner url (format --> {hostname}).
+                                </div>
+                            </li>
+                            <li>
+                                <label for="chkLoadFavorites">Only load Channels marked as favorite</label>
+                                <input type="checkbox" id="chkLoadFavorites" data-mini="true" />
+                            </li>
+                        </ul>
+                    </fieldset>
+                        <fieldset>
+                            <legend>TV Guide</legend>
+                            <ul class="ulForm" data-role="listview">
+                                <li>
+                                    <label for="txtGuideUsername">
+                                        Schedules Direct Username:
+                                    </label>
+                                    <input type="text" id="txtGuideUsername" name="txtGuideUsername" />
+                                </li>
+                                <li>
+                                    <label for="txtGuidePassword">
+                                        Schedules Direct Password:
+                                    </label>
+                                    <input type="password" id="txtGuidePassword" name="txtGuidePassword" />
+                                </li>
+                                <li>
+                                    <label for="txtTvLineUp">
+                                        Schedules Direct Tv LineUp:
+                                    </label>
+                                    <select name="tvLineups" id="tvLineups">
+                                        <option value="">Select Lineup</option>
+                                    </select>
+                                </li>
+                            </ul>
+                         </fieldset>
                     <ul class="ulForm" data-role="listview">
-                        <li>
-                            <label for="txtWebServiceUrl">
-                                HomeRun hostname or IP address:
-                            </label>
-                            <input type="text" id="txtWebServiceUrl" name="txtWebServiceUrl" />
-                            <div class="fieldDescription">
-                                Tunner url (format --> {hostname}).
-                            </div>
-                        </li>
-                        <li>
-                            <label for="txtGuideUsername">
-                                Schedules Direct Username:
-                            </label>
-                            <input type="text" id="txtGuideUsername" name="txtGuideUsername" />
-                        </li>
-                        <li>
-                            <label for="txtGuidePassword">
-                                Schedules Direct Password:
-                            </label>
-                            <input type="password" id="txtGuidePassword" name="txtGuidePassword" />
-                        </li>
-                        <li>
-                            <label for="txtTvLineUp">
-                                Schedules Direct Tv LineUp:
-                            </label>
-                            <input type="text" id="txtTvLineUp" name="txtTvLineUp" />
-                        </li>
-                        <li>
-                            <label for="chkLoadFavorites">Only load Channels marked as favorite</label>
-                            <input type="checkbox" id="chkLoadFavorites" data-mini="true" />
-                        </li>
                         <li>
                             <button type="submit" data-theme="b">Save</button>
                             <button type="button" onclick="history.back();">Cancel</button>
                         </li>
-
-                    </ul>
+                    </ul>  
 
                 </form>
             </div>
@@ -56,6 +66,21 @@
         <script type="text/javascript">
 
             var HomeRunTVConfigurationPage = { pluginUniqueId: "b0067c00-62cf-476c-9e63-d53ae7247aa9" };
+            function createLineupsDropdown(_lineups,currentLineup) {
+                var lineups = _lineups.split(",");
+                var dropdown = document.getElementById("tvLineups");
+                if (lineups[0]) {              
+                    for (var i = 0; i < lineups.length; i++) {
+                        dropdown[i + 1] = new Option(lineups[i], lineups[i]);
+                        if (currentLineup == lineups[i]) {
+                            dropdown[i + 1].setAttribute("selected", "selected");
+                        }
+                 }
+                 } else {
+                    dropdown[1] = new Option("No lineups Avaliable","");
+                }
+                //location.reload();
+            }
 
             $('.HomeRunTVConfigurationPage').on('pageshow', function (event) {
                 Dashboard.showLoadingMsg();
@@ -63,9 +88,10 @@
                 ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
                     $('#txtWebServiceUrl', page).val(config.apiURL || "");
                     $('#txtGuideUsername', page).val(config.username || "");
-                    $('#txtTvLineUp', page).val(config.tvLineUp || "");
                     $('#txtGuidePassword', page).val("");
                     $('#chkLoadFavorites', page).checked(config.loadOnlyFavorites).checkboxradio("refresh");
+                    var lineups = config.avaliableLineups;
+                    createLineupsDropdown(lineups, config.tvLineUp);
                     Dashboard.hideLoadingMsg();
                 });
             });
@@ -78,15 +104,16 @@
                 ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
                     config.apiURL = $('#txtWebServiceUrl', form).val();
                     config.username = $('#txtGuideUsername', form).val();
-                    config.tvLineUp = $('#txtTvLineUp', form).val();
                     if (pass != "") { config.hashPassword = pass; }
                     config.loadOnlyFavorites = $('#chkLoadFavorites', form).checked();
+                    config.tvLineUp = document.getElementById("tvLineups").options[document.getElementById("tvLineups").selectedIndex].value;
                     ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
-                    $('#txtGuidePassword', form).reset();
+
                 });
                 // Disable default form submission
                 return false;
             });
+
            
         </script>
 

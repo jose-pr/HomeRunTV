@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MediaBrowser.Model.Plugins;
-
+using HomeRunTV.GuideData;
+using HomeRunTV.GeneralHelpers;
 namespace HomeRunTV.Configuration
 {
     public class PluginConfiguration:BasePluginConfiguration
@@ -11,6 +13,7 @@ namespace HomeRunTV.Configuration
         public string hashPassword { get; set; }
         public string username { get; set; }
         public string tvLineUp { get; set; }
+        public string avaliableLineups { get; set; }
 
         public PluginConfiguration()
         {
@@ -20,6 +23,7 @@ namespace HomeRunTV.Configuration
             tvLineUp = "";
             username = "";
             hashPassword = "";
+            avaliableLineups = "";
         }
     }
 }

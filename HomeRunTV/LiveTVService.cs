@@ -43,6 +43,7 @@ namespace HomeRunTV
 
         public LiveTvService(IHttpClient httpClient, IJsonSerializer jsonSerializer, ILogger logger, IXmlSerializer xmlSerializer)
         {
+            logger.Info("initializing HOMERUNTV");
             httpHelper = new GeneralHelpers.HttpClientHelper();
              httpHelper.httpClient = _httpClient = httpClient;
              httpHelper.jsonSerializer = _jsonSerializer = jsonSerializer;
@@ -52,7 +53,11 @@ namespace HomeRunTV
             Name = "Not Connected";
             tunerServer = new TunerServer(_plugin.Configuration.apiURL);
             tunerServer.onlyLoadFavorites = _plugin.Configuration.loadOnlyFavorites;           
-            tvGuide = new GuideData.SchedulesDirect(_plugin.Configuration.username, _plugin.Configuration.hashPassword, _plugin.Configuration.tvLineUp);          
+            tvGuide = new GuideData.SchedulesDirect(_plugin.Configuration.username, _plugin.Configuration.hashPassword, _plugin.Configuration.tvLineUp);
+            var task = Task<string>.Run(async () => { _plugin.Configuration.avaliableLineups = await tvGuide.getLineups(httpHelper); });
+            task.Wait();
+            _logger.Info("[HomeRunTV] added lineup to config" + _plugin.Configuration.avaliableLineups);
+
         }
 
         /// <summary>

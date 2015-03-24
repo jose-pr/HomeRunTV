@@ -11,7 +11,7 @@ using MediaBrowser.Model.Logging;
 
 namespace HomeRunTV.GeneralHelpers
 {
-    class HttpClientHelper
+    public class HttpClientHelper
     {
         public IHttpClient httpClient{get;set;}
         public HttpRequestOptions httpOptions{get;set;}
