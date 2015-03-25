@@ -49,6 +49,12 @@
                                     <select name="tvLineups" id="tvLineups">
                                         <option value="">Select Lineup</option>
                                     </select>
+                                </li>     
+                                <li>
+                                    <label for="zipCode">
+                                        ZipCode:
+                                    </label>
+                                    <input type="text" id="zipCode" name="zipCode" />
                                 </li>
                             </ul>
                          </fieldset>
@@ -62,60 +68,6 @@
                 </form>
             </div>
         </div>
-
-        <script type="text/javascript">
-
-            var HomeRunTVConfigurationPage = { pluginUniqueId: "b0067c00-62cf-476c-9e63-d53ae7247aa9" };
-            function createLineupsDropdown(_lineups,currentLineup) {
-                var lineups = _lineups.split(",");
-                var dropdown = document.getElementById("tvLineups");
-                if (lineups[0]) {              
-                    for (var i = 0; i < lineups.length; i++) {
-                        dropdown[i + 1] = new Option(lineups[i], lineups[i]);
-                        if (currentLineup == lineups[i]) {
-                            dropdown[i + 1].setAttribute("selected", "selected");
-                        }
-                 }
-                 } else {
-                    dropdown[1] = new Option("No lineups Avaliable","");
-                }
-                //location.reload();
-            }
-
-            $('.HomeRunTVConfigurationPage').on('pageshow', function (event) {
-                Dashboard.showLoadingMsg();
-                var page = this;
-                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
-                    $('#txtWebServiceUrl', page).val(config.apiURL || "");
-                    $('#txtGuideUsername', page).val(config.username || "");
-                    $('#txtGuidePassword', page).val("");
-                    $('#chkLoadFavorites', page).checked(config.loadOnlyFavorites).checkboxradio("refresh");
-                    var lineups = config.avaliableLineups;
-                    createLineupsDropdown(lineups, config.tvLineUp);
-                    Dashboard.hideLoadingMsg();
-                });
-            });
-
-            $('.HomeRunTVConfigurationForm').on('submit', function (e) {
-                Dashboard.showLoadingMsg();
-                var form = this;
-                var pass="";
-                if ($('#txtGuidePassword', form).val() != "") { pass = Sha1.hash($('#txtGuidePassword', form).val()); }
-                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
-                    config.apiURL = $('#txtWebServiceUrl', form).val();
-                    config.username = $('#txtGuideUsername', form).val();
-                    if (pass != "") { config.hashPassword = pass; }
-                    config.loadOnlyFavorites = $('#chkLoadFavorites', form).checked();
-                    config.tvLineUp = document.getElementById("tvLineups").options[document.getElementById("tvLineups").selectedIndex].value;
-                    ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
-
-                });
-                // Disable default form submission
-                return false;
-            });
-
-           
-        </script>
 
         <script type="text/javascript">
 
@@ -277,6 +229,73 @@
             /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
             if (typeof module != 'undefined' && module.exports) module.exports = Sha1; // CommonJs export
             if (typeof define == 'function' && define.amd) define([], function () { return Sha1; }); // AMD
+            var HomeRunTVConfigurationPage = { pluginUniqueId: "b0067c00-62cf-476c-9e63-d53ae7247aa9" };
+            function createLineupsDropdown(_lineups,currentLineup,headName,headValue) {
+                var lineups = _lineups.split(",");
+                var values = headValue.split(",");
+                var names = headName.split(",");
+                var dropdown = document.getElementById("tvLineups");
+                if (lineups[0]) {              
+                    for (var i = 0; i < names.length; i++) {
+                        dropdown[i + 1] = new Option(names[i], values[i]);
+                        if (currentLineup == values[i]) {
+                            dropdown[i + 1].setAttribute("selected", "selected");
+                        }
+                        if (contains(lineups, values[i])) {
+                            dropdown[i + 1].style.backgroundColor = 'Aquamarine'
+                        }
+                 }
+                 } else {
+                    dropdown[1] = new Option("No lineups Avaliable","");
+                }
+            }
+            /*http://stackoverflow.com/questions/237104/array-containsobj-in-javascript*/
+            function contains(a, obj) {
+                for (var i = 0; i < a.length; i++) {
+                    if (a[i] === obj) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            $('.HomeRunTVConfigurationPage').on('pageshow', function (event) {
+                Dashboard.showLoadingMsg();
+                var page = this;
+                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
+                    $('#txtWebServiceUrl', page).val(config.apiURL || "");
+                    $('#txtGuideUsername', page).val(config.username || "");
+                    $('#txtGuidePassword', page).val("");
+                    $('#chkLoadFavorites', page).checked(config.loadOnlyFavorites).checkboxradio("refresh");
+                    $('#zipCode', page).val(config.zipCode || "");
+                    createLineupsDropdown(config.avaliableLineups, config.tvLineUp, config.headendName, config.headendValue);
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            $('.HomeRunTVConfigurationForm').on('submit', function (e) {
+                Dashboard.showLoadingMsg();
+                var form = this;
+                var pass="";
+                if ($('#txtGuidePassword', form).val() != "") { pass = Sha1.hash($('#txtGuidePassword', form).val()); }
+                ApiClient.getPluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId).done(function (config) {
+                    config.apiURL = $('#txtWebServiceUrl', form).val();
+                    config.username = $('#txtGuideUsername', form).val();
+                    config.zipCode = $('#zipCode', form).val();
+                    if (pass != "") { config.hashPassword = pass; }
+                    config.loadOnlyFavorites = $('#chkLoadFavorites', form).checked();
+                    config.tvLineUp = document.getElementById("tvLineups").options[document.getElementById("tvLineups").selectedIndex].value;
+                    config.avaliableLineups = "";
+                    config.headendName = "";
+                    config.headendValue = "";
+                    ApiClient.updatePluginConfiguration(HomeRunTVConfigurationPage.pluginUniqueId, config).done(Dashboard.processPluginConfigurationUpdateResult);
+
+                });
+                // Disable default form submission
+                return false;
+            });
+
+           
         </script>
     </div>
 </body>

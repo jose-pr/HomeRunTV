@@ -54,9 +54,24 @@ namespace HomeRunTV
             tunerServer = new TunerServer(_plugin.Configuration.apiURL);
             tunerServer.onlyLoadFavorites = _plugin.Configuration.loadOnlyFavorites;           
             tvGuide = new GuideData.SchedulesDirect(_plugin.Configuration.username, _plugin.Configuration.hashPassword, _plugin.Configuration.tvLineUp);
-            var task = Task<string>.Run(async () => { _plugin.Configuration.avaliableLineups = await tvGuide.getLineups(httpHelper); });
-            task.Wait();
-            _logger.Info("[HomeRunTV] added lineup to config" + _plugin.Configuration.avaliableLineups);
+            var task = Task<string>.Run(async () =>
+            {
+                _plugin.Configuration.avaliableLineups = await tvGuide.getLineups(httpHelper);
+                var dict = await tvGuide.getHeadends(_plugin.Configuration.zipCode,httpHelper);
+                var names ="";
+                var values = "";
+                foreach(KeyValuePair<string, string> entry in dict){
+                    names = names+","+entry.Key;
+                    values = values+","+entry.Value;
+                }
+                if (!String.IsNullOrWhiteSpace(names)){names=names.Substring(1);values=values.Substring(1);}
+                _plugin.Configuration.headendName = names;
+                _plugin.Configuration.headendValue = values;
+                logger.Info(names);
+                logger.Info(values);
+            });
+            task.Wait();     
+
 
         }
 
@@ -84,7 +99,24 @@ namespace HomeRunTV
             {
                 Name = tunerServer.model;
             }
-            await tvGuide.getStatus(httpHelper);
+            var task = Task<string>.Run(async () =>
+            {
+                _plugin.Configuration.avaliableLineups = await tvGuide.getLineups(httpHelper);
+                var dict = await tvGuide.getHeadends(_plugin.Configuration.zipCode, httpHelper);
+                var names = "";
+                var values = "";
+                foreach (KeyValuePair<string, string> entry in dict)
+                {
+                    names = names + "," + entry.Key;
+                    values = values + "," + entry.Value;
+                }
+                if (!String.IsNullOrWhiteSpace(names)) { names = names.Substring(1); values = values.Substring(1); }
+                _plugin.Configuration.headendName = names;
+                _plugin.Configuration.headendValue = values;
+                _logger.Info(names);
+                _logger.Info(values);
+            });
+            task.Wait();  
         }
 
           /// <summary>
@@ -94,13 +126,20 @@ namespace HomeRunTV
         /// <returns>Task{IEnumerable{ChannelInfo}}.</returns>
         public async Task<IEnumerable<ChannelInfo>> GetChannelsAsync(CancellationToken cancellationToken)
         {
+
             httpHelper.cancellationToken = cancellationToken;
             _logger.Info("[HomeRunTV] Start GetChannels Async, retrieve all channels for " + tunerServer.getWebUrl());
             await EnsureConnectionAsync(cancellationToken).ConfigureAwait(false);
-            await tvGuide.getToken(httpHelper);
-            var _httpOptions = new HttpRequestOptions{CancellationToken = cancellationToken};
-            var response = await tunerServer.GetChannels(_logger,_httpClient,_httpOptions,_jsonSerializer,_xmlSerializer);
-            return await tvGuide.getChannelInfo(httpHelper, response); 
+            if (!String.IsNullOrWhiteSpace(_plugin.Configuration.tvLineUp))
+            {
+                await tvGuide.getToken(httpHelper);
+                 _logger.Info("[HomeRunTV] Start GetChannels Async");
+                var _httpOptions = new HttpRequestOptions { CancellationToken = cancellationToken };
+                var response = await tunerServer.GetChannels(_logger, _httpClient, _httpOptions, _jsonSerializer, _xmlSerializer);
+                return await tvGuide.getChannelInfo(httpHelper, response);
+            }
+            else { return new List<ChannelInfo>();}
+        
             
         }
 
